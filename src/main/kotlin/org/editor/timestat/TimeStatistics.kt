@@ -1,7 +1,5 @@
 package org.editor.timestat
 
-import java.util.Deque
-
 class TimeStatistics {
     private val times = ArrayDeque<Long>()
     private val coefficients = List(10) { (100 - it * it).toLong() }
