@@ -4,12 +4,11 @@ import org.editor.components.JTextPaneWithHeader
 import org.editor.components.TriangleIcon
 import org.editor.components.appendToPane
 import org.editor.components.setTabSize
+import org.editor.errorparsing.parseErrors
 import org.editor.styles.*
 import org.editor.timestat.TimeStatistics
 import org.executor.ScriptExecutor
 import java.awt.*
-import java.awt.event.ActionEvent
-import java.awt.event.ActionListener
 import java.io.BufferedReader
 import java.io.File
 import java.io.IOException
@@ -20,10 +19,14 @@ import javax.swing.*
 import javax.swing.border.EmptyBorder
 import javax.swing.event.DocumentEvent
 import javax.swing.event.DocumentListener
+import javax.swing.event.HyperlinkEvent
 import javax.swing.plaf.basic.BasicProgressBarUI
 import javax.swing.text.*
+import javax.swing.text.html.HTMLDocument
+import javax.swing.text.html.HTMLEditorKit
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.deleteRecursively
+
 
 private val KEYWORDS = setOf(
     "val",
@@ -196,7 +199,7 @@ class App {
     private fun setFont(textPane: JTextPane) {
         try {
             var customFont = Font.createFont(Font.TRUETYPE_FONT, File("fonts/JetBrainsMono-Regular.ttf"))
-            customFont = customFont.deriveFont(Font.PLAIN, 14f) // Set font size (adjust as needed)
+            customFont = customFont.deriveFont(Font.PLAIN, 14f)
             textPane.setFont(customFont)
         } catch (e: FontFormatException) {
             e.printStackTrace()
@@ -224,6 +227,7 @@ class App {
 
         button.isEnabled = false
         button.icon = TriangleIcon(TRIANGLE_BUTTON_RED, 10, 10)
+        outputTextPane.textPane.contentType = "text/plain"
         outputTextPane.textPane.text = ""
 
         val worker = createRuntimeWorker(button)
@@ -260,8 +264,49 @@ class App {
                 timeStatistics.endExecution()
                 runtimeTimer.stop()
                 progressBar.value = 100
+
+                if (exitCode != 0) {
+                    markErrors()
+                }
             }
         }
+
+    private fun markErrors() {
+
+        val tokens = outputTextPane.textPane.text.lines().map { it.split(" ", limit = 2) }
+        outputTextPane.textPane.contentType = "text/html"
+        val doc: HTMLDocument = outputTextPane.textPane.document as HTMLDocument
+        val editorKit: HTMLEditorKit = outputTextPane.textPane.editorKit as HTMLEditorKit
+
+
+        val listOfErrors = parseErrors(tokens)
+        var listOfErrorsIndex = 0
+        for (lineIndex in tokens.indices) {
+            val newLine =
+                if (listOfErrorsIndex < listOfErrors.size && lineIndex == listOfErrors[listOfErrorsIndex].lineInOutput) {
+                    "<a href=\"${listOfErrors[listOfErrorsIndex].lineInCode},${listOfErrors[listOfErrorsIndex].symbolInCode}\">${tokens[lineIndex][0]}</a> " + tokens[lineIndex].takeLast(
+                        tokens[lineIndex].size - 1
+                    )
+                        .reduce { acc, s -> acc + s }.also { listOfErrorsIndex++ }
+                } else {
+                    tokens[lineIndex].reduce { acc, s -> acc + s }
+                }
+            editorKit.insertHTML(doc, doc.length, newLine + "\n", 0, 0, null)
+        }
+
+        outputTextPane.textPane.addHyperlinkListener { e ->
+            if (e.eventType == HyperlinkEvent.EventType.ACTIVATED) {
+                val desc = e.description.split(",")
+                val line = desc[0].toInt()
+                val symbol = desc[1].toInt()
+                codeTextPane.textPane.requestFocus()
+                val lines = codeTextPane.textPane.text.lines()
+                val lineStartOffset = lines.take(line).sumOf { it.length } + line
+                val position = lineStartOffset + symbol
+                codeTextPane.textPane.caretPosition = position
+            }
+        }
+    }
 }
 
 @OptIn(ExperimentalPathApi::class)

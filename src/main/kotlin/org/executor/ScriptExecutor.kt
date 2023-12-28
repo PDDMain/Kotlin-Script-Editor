@@ -8,7 +8,7 @@ import java.util.logging.Logger
 class ScriptExecutor(val scriptFile: File) {
     fun runKotlinScript(code: String): Process {
         val scriptFileWriter = FileWriter(scriptFile)
-        scriptFileWriter.write("println(\"\\n\")\n$code")
+        scriptFileWriter.write(code)
         scriptFileWriter.close()
 
         Logger.getLogger("ScriptExecutor").log(LogRecord(Level.INFO, "Executing script $scriptFile"))
