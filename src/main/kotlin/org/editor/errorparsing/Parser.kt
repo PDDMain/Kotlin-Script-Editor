@@ -5,7 +5,7 @@ fun parseErrors(errors: List<List<String>>) : List<ErrorDescription> {
     for (index in errors.indices) {
         val firstWord = errors[index][0].split(":")
         if (firstWord.size == 4 && firstWord[1].all { it.isDigit() } && firstWord[1].all { it.isDigit()}) {
-            listOfErrors.add(ErrorDescription(index, firstWord[1].toInt(), firstWord[2].toInt()))
+            listOfErrors.add(ErrorDescription(index, firstWord[1].toInt() - 1, firstWord[2].toInt() - 1))
         }
     }
     return listOfErrors

@@ -1,9 +1,15 @@
 package org.editor.components
 
+import org.editor.styles.BACKGROUND_LIGHT_DARK
+import org.editor.styles.FOREGROUND_LIGHT
+import org.editor.styles.OUTPUT_FONT_BLACK
 import java.awt.*
 import java.awt.geom.Path2D
 import javax.swing.*
+import javax.swing.border.LineBorder
+import javax.swing.plaf.basic.BasicScrollBarUI
 import javax.swing.text.*
+
 
 class TriangleIcon(private val color: Color, private val width: Int, private val height: Int) : Icon {
     override fun paintIcon(c: Component, g: Graphics, x: Int, y: Int) {
@@ -36,15 +42,20 @@ class JTextPaneWithHeader(headerText: String) : JPanel() {
     init {
         layout = BorderLayout()
 
+        border = LineBorder(OUTPUT_FONT_BLACK)
+        background = BACKGROUND_LIGHT_DARK
         // Create header label
         val headerLabel = JLabel(headerText)
+        headerLabel.foreground = FOREGROUND_LIGHT
         headerLabel.horizontalAlignment = SwingConstants.CENTER
+        headerLabel.border = LineBorder(OUTPUT_FONT_BLACK)
         add(headerLabel, BorderLayout.NORTH)
 
         // Create text pane
         textPane = JTextPane()
         val scrollPane = JScrollPane(textPane)
-        add(scrollPane, BorderLayout.CENTER)
+        scrollPane.border = LineBorder(OUTPUT_FONT_BLACK)
+        add(textPane, BorderLayout.CENTER)
     }
 }
 
